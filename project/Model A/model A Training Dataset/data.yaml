@@ -1,0 +1,13 @@
+train: ../train/images
+val: ../valid/images
+test: ../test/images
+
+nc: 5
+names: ['270', '378', '393', '676', '686']
+
+roboflow:
+  workspace: shrutis-workspace
+  project: failsafe-profile-grinding
+  version: 13
+  license: CC BY 4.0
+  url: https://universe.roboflow.com/shrutis-workspace/failsafe-profile-grinding/dataset/13

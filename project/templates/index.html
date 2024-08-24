@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FailSafe Bulldog Profile Grinding Model</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f2f2f2;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 30px auto;
+            padding: 20px;
+            background-color: gainsboro;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        form {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .wheel-type-button, .detection-button {
+            width: 120px;
+            padding: 12px;
+            font-size: 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin: 10px;
+            color: white;
+        }
+        .wheel-type-button {
+            background-color: gray;
+        }
+        .wheel-type-button.active {
+            background-color: green;
+        }
+        .detection-button {
+            background-color: #007bff;
+            font-weight: bold;
+        }
+        .detection-button:hover {
+            background-color: #0056b3;
+        }
+        .webcam-container {
+            text-align: center;
+            margin-top: 20px;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+        }
+        .result-container {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .result-button {
+            font-size: larger;
+            font-weight: 900;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            color: white;
+        }
+        .result-button.valid {
+            background-color: green;
+        }
+        .result-button.invalid {
+            background-color: red;
+        }
+        .dropdown-container {
+            text-align: center;
+            margin: 20px;
+        }
+        select {
+            padding: 10px;
+            font-size: 16px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>FailSafe Bulldog Profile Grinding Model</h1>
+        <form id="wheelTypeForm">
+            <div class="dropdown-container">
+                <select id="wheel_type" name="wheel_type">
+                    <option value="270">270</option>
+                    <option value="378">378</option>
+                    <option value="393">393</option>
+                    <option value="686">686</option>
+                    <option value="676">676</option>
+                </select>
+            </div>
+            <button type="button" id="start_detection" class="detection-button" onclick="startDetection()">Start Detection</button>
+            <button type="button" id="stop_detection" class="detection-button" onclick="stopDetection()">Stop Detection</button>
+        </form>
+        <div class="webcam-container">
+            <img id="video_feed" src="{{ url_for('video_feed') }}" alt="Video Feed">
+        </div>
+        <div class="result-container">
+            <button id="result_button" class="result-button">Waiting...</button>
+        </div>
+    </div>
+    <script>
+        let detectionPollingInterval;
+
+        function startDetection() {
+            fetch('/start_detection', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === "detection_started") {
+                        document.getElementById('start_detection').disabled = true;
+                        document.getElementById('stop_detection').disabled = false;
+                        // Start polling for the result
+                        startPollingResult();
+                    } else if (data.status === "already_running") {
+                        alert("Detection is already running.");
+                    }
+                });
+        }
+
+        function stopDetection() {
+            fetch('/stop_detection', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === "detection_stopped") {
+                        document.getElementById('start_detection').disabled = false;
+                        document.getElementById('stop_detection').disabled = true;
+                        // Stop polling for the result
+                        stopPollingResult();
+                    }
+                });
+        }
+
+        function updateResult() {
+            fetch('/get_detection_output')
+                .then(response => response.json())
+                .then(data => {
+                    const resultButton = document.getElementById('result_button');
+                    resultButton.textContent = data.result;
+                    resultButton.className = 'result-button ' + (data.result === 'Valid' ? 'valid' : 'invalid');
+                });
+        }
+
+        function startPollingResult() {
+            // Poll every 2 seconds
+            detectionPollingInterval = setInterval(updateResult, 2000);
+        }
+
+        function stopPollingResult() {
+            if (detectionPollingInterval) {
+                clearInterval(detectionPollingInterval);
+                detectionPollingInterval = null;
+            }
+        }
+
+        document.getElementById('wheel_type').addEventListener('change', function() {
+            const selectedType = this.value;
+            fetch('/set_selected_type', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ type: selectedType })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log("Selected type set to:", data.selected_type);
+            });
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('stop_detection').disabled = true;
+        });
+    </script>
+</body>
+</html>
