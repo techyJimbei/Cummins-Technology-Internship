@@ -1,0 +1,12 @@
+# CVML Object Detection for MR Shaft and Wheel Manufacturing
+
+# Core dependencies
+opencv-python
+tensorflow
+keras
+flask
+
+# Additional dependencies (optional)
+numpy
+matplotlib
+pandas
